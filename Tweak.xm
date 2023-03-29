@@ -1,6 +1,10 @@
 #include <Preferences/PSSpecifier.h>
 #include <dlfcn.h>
 #include "prefs.h"
+#import "rootless.h"
+
+static NSString * const kPreferenceLoaderPath = ROOT_PATH_NS(@"/Library/PreferenceLoader/Preferences");
+static NSString * const kPreferencesDefaultIconPath = ROOT_PATH_NS(@"/Library/PreferenceLoader/Default.png");
 
 @interface UIImage (Private)
 + (instancetype)imageNamed:(NSString *)name inBundle:(NSBundle *)bundle;
@@ -14,15 +18,15 @@
 
   NSMutableArray *specs = [NSMutableArray new];
   // subpathsOfDirectory, unlike contentsOfDirectory, is recursive, and we need this for plists in folders
-  for (NSString *file in [[NSFileManager defaultManager] subpathsOfDirectoryAtPath:@"/Library/PreferenceLoader/Preferences" error:nil]) {
+  for (NSString *file in [[NSFileManager defaultManager] subpathsOfDirectoryAtPath:kPreferenceLoaderPath error:nil]) {
     if (![file.pathExtension isEqualToString:@"plist"]) continue;
 
-    NSString *path = [@"/Library/PreferenceLoader/Preferences" stringByAppendingPathComponent:file];
+    NSString *path = [kPreferenceLoaderPath stringByAppendingPathComponent:file];
     NSDictionary *entry = [NSDictionary dictionaryWithFile:path][@"entry"];
     if (!entry || ![PSSpecifier environmentPassesPreferenceLoaderFilter:[entry objectForKey:@"pl_filter"]]) continue;
 
     PSSpecifier *specifier = [self specifiersFromEntry:entry sourcePreferenceLoaderBundlePath:path.stringByDeletingLastPathComponent title:file.lastPathComponent.stringByDeletingPathExtension][0];
-    UIImage *icon = [specifier propertyForKey:@"iconImage"] ? : [UIImage imageWithContentsOfFile:@"/Library/PreferenceLoader/Default.png"];
+    UIImage *icon = [specifier propertyForKey:@"iconImage"] ? : [UIImage imageWithContentsOfFile:kPreferencesDefaultIconPath];
     if (icon) {
       UIGraphicsBeginImageContextWithOptions(CGSizeMake(29, 29), NO, [UIScreen mainScreen].scale);
       CGRect iconRect = CGRectMake(0, 0, 29, 29);
@@ -73,7 +77,7 @@
 %end
 
 %ctor {
-  dlopen("/usr/lib/libprefs.dylib", RTLD_LAZY);
+  dlopen(ROOT_PATH("/usr/lib/libprefs.dylib"), RTLD_LAZY);
   Class prefsControllerClass = %c(PSUIPrefsListController) ? : %c(PrefsListController);
   %init(PSUIPrefsListController = prefsControllerClass);
 }

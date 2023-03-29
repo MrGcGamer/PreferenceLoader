@@ -1,6 +1,7 @@
 #include <Preferences/PSSpecifier.h>
 #include <substrate.h>
 #import "prefs.h"
+#import "rootless.h"
 
 @interface PSListController (Preferences)
 - (void)lazyLoadBundle:(PSSpecifier *)sender;
@@ -96,7 +97,7 @@ NSString *const PLFilterKey = @"pl_filter";
   NSMutableArray *potentialPaths = [NSMutableArray new];
   if (entry[@"bundlePath"]) [potentialPaths addObject:entry[@"bundlePath"]];
   if (entry[@"bundle"]) {
-    [potentialPaths addObject:[NSString stringWithFormat:@"/Library/PreferenceBundles/%@.bundle", entry[@"bundle"]]];
+    [potentialPaths addObject:[NSString stringWithFormat:ROOT_PATH_NS(@"/Library/PreferenceBundles/%@.bundle"), entry[@"bundle"]]];
     [potentialPaths addObject:[NSString stringWithFormat:@"/System/Library/PreferenceBundles/%@.bundle", entry[@"bundle"]]];
   }
   if (sourceBundlePath) [potentialPaths addObject:sourceBundlePath];
@@ -128,14 +129,22 @@ NSString *const PLFilterKey = @"pl_filter";
   else {
     UITableViewCell *cell = [sender propertyForKey:@"cellObject"];
     [self.table deselectRowAtIndexPath:[self.table indexPathForCell:cell] animated:YES];
-    if (@available(iOS 8, *)) {
+
+    #ifdef ROOTLESS_BUILD
       UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Error" message:error.description preferredStyle:UIAlertControllerStyleAlert];
       [alert addAction:[UIAlertAction actionWithTitle:@"Dismiss" style:UIAlertActionStyleCancel handler:nil]];
       [self presentViewController:alert animated:YES completion:nil];
-    } else {
-      UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Error" message:error.description delegate:nil cancelButtonTitle:@"Dismiss" otherButtonTitles:nil];
-      [alert show];
-    }
+    #else
+      if (@available(iOS 8, *)) {
+        UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Error" message:error.description preferredStyle:UIAlertControllerStyleAlert];
+        [alert addAction:[UIAlertAction actionWithTitle:@"Dismiss" style:UIAlertActionStyleCancel handler:nil]];
+        [self presentViewController:alert animated:YES completion:nil];
+      } else {
+        UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Error" message:error.description delegate:nil cancelButtonTitle:@"Dismiss" otherButtonTitles:nil];
+        [alert show];
+      }
+    #endif
+
   }
 }
 

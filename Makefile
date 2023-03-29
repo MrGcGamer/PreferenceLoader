@@ -1,20 +1,23 @@
-ARCHS = armv7 arm64 arm64e
-#ARCHS = arm64
-TARGET = iphone:clang:14.4:7.0
+ARCHS = arm64 arm64e
 
 DEBUG = 0
 FINALPACKAGE = 1
 
 INSTALL_TARGET_PROCESSES = Preferences
 
-THEOS_DEVICE_IP = localhost
-THEOS_DEVICE_PORT = 2222
+LIBRARY_NAME = libprefs
+
+ifeq ($(THEOS_PACKAGE_SCHEME),rootless)
+	TARGET = iphone:14.4:14.0
+	libprefs_CFLAGS += -D ROOTLESS_BUILD
+else
+	TARGET = iphone:clang:14.4:7.0
+endif
 
 include $(THEOS)/makefiles/common.mk
 
-LIBRARY_NAME = libprefs
 libprefs_FILES = libprefs.xm
-libprefs_CFLAGS = -fobjc-arc
+libprefs_CFLAGS += -fobjc-arc
 libprefs_FRAMEWORKS = UIKit
 libprefs_PRIVATE_FRAMEWORKS = Preferences
 libprefs_COMPATIBILITY_VERSION = 2.2.0
